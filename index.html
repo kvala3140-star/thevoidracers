@@ -109,10 +109,10 @@ $("no").innerHTML='<option value="">Unassigned</option>'+ROSTER.map(function(n){
 /* ---- PASTE YOUR FIREBASE CONFIG HERE (see README.md) ---- */
 var firebaseConfig={apiKey:"AIzaSyDrDhcOI5JHv9czKUG0EU5XGzJRrkTOA9Q",authDomain:"thevoidracers-84d0d.firebaseapp.com",projectId:"thevoidracers-84d0d",appId:"1:857579521383:web:ff46966bc509e323311bc2"};
 /* ---------------------------------------------------------- */
-var DOMAIN="@pitwall.team",auth,unsubs=[];
+var DOMAIN="@tvracers.team",auth,unsubs=[];
 function loginForm(msg){
   gate('<h2>Sign in</h2><form id="lf" class="row"><div><label for="lu">Username (e.g. vkhahan)</label><input id="lu" autocomplete="username" required></div><div><label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" required></div><div><button class="primary" style="width:100%">Sign in</button></div></form><p class="meta" id="lm" role="alert">'+(msg||"")+'</p>');
-  $("lf").onsubmit=function(e){e.preventDefault();var u=$("lu").value.trim().toLowerCase();
+  $("lf").onsubmit=function(e){e.preventDefault();var u=$("lu").value.trim().toLowerCase().split("@")[0];
     if(ROSTER.indexOf(u)<0){$("lm").textContent="Unknown username.";return}
     auth.signInWithEmailAndPassword(u+DOMAIN,$("lp").value).catch(function(){$("lm").textContent="Wrong username or password."})};
 }
