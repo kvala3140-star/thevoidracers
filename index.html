@@ -160,7 +160,7 @@ function render(){
   var n=S.date?diff(S.date):null;
   $("days").textContent=n===null?"–":n<0?"Done":n;
   $("daysLbl").textContent=n===null?"Waiting for the event date":n<0?S.event+" has passed":"days to "+S.event;
-  $("evName").closest(".panel").hidden=!ME.owner;
+  $("evName").closest(".panel").hidden=!ME.owner;$("f").hidden=!ME.owner;
   $("who").innerHTML="Signed in as <b>"+esc(nm(ME.name))+"</b>"+(ME.owner?" (owner)":"")+' · <button class="del" id="out">Sign out</button>';
   $("out").onclick=function(){auth.signOut()};
   var T=S.tasks,done=T.filter(isDone).length;
@@ -184,7 +184,7 @@ function render(){
       +(can?'<button class="step" data-id="'+x.id+'" data-p="'+p+'" data-d="1" aria-label="Add one for '+esc(who(p))+'">+</button>':"")+'</span></div>'}).join("");
     return'<li class="'+cls+'"><div><div class="t">'+esc(x.t)+'</div><div class="meta"><span class="chip">'+esc(x.c)+'</span>'+(ME.owner?'<button class="del" data-del="'+x.id+'">Delete</button>':"")+'</div>'+rows+'</div>'
     +'<div class="due"><b>'+(d?"Done":rel(k))+'</b>'+fmt(x.d)+'</div></li>'}).join("")
-    :'<li class="empty">'+(T.length?"Nothing here. Try another filter.":"No tasks yet. "+(ME.owner?"Set the event date and load the template, or add the first task above.":"Add the first task above."))+'</li>';
+    :'<li class="empty">'+(T.length?"Nothing here. Try another filter.":"No tasks yet. "+(ME.owner?"Set the event date and load the template, or add the first task above.":"vkhahan will add tasks here."))+'</li>';
   Array.prototype.forEach.call(document.querySelectorAll("[data-d]"),function(b){b.onclick=function(){
     var x=S.tasks.filter(function(y){return y.id===b.dataset.id})[0];if(!x)return;
     var v=Math.max(0,Math.min(tgt(x),cnt(x,b.dataset.p)+(+b.dataset.d)));var o={};o["progress."+b.dataset.p]=v;
