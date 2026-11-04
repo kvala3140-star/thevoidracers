@@ -46,6 +46,31 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
 .del{border:0;background:none;color:var(--mute);padding:2px 6px;font-size:13px;font-weight:500}
 .pk{display:inline-flex;align-items:center;gap:6px;margin:4px 14px 4px 0;color:var(--ink)}.pk input{width:18px;height:18px;accent-color:var(--purple)}.pr{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;margin-top:8px}.pbar{height:8px;background:var(--chip);border-radius:99px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--purple)}.pbar.ok i{background:var(--green)}.step{padding:0 10px;min-width:34px;font-size:18px;line-height:1.4}.cnt{display:inline-block;min-width:44px;text-align:center;font-weight:700}
 .empty{padding:24px;text-align:center;color:var(--mute);border:2px dashed var(--line);border-radius:6px}
+
+.banner{background:linear-gradient(90deg,#3b1a7a,#1d1236);border:1px solid var(--purple);border-radius:6px;padding:10px 14px;margin:14px 0 0}
+.pri-High{background:var(--red);color:#12060a;font-weight:700}
+.post{border-top:1px solid var(--line);padding:8px 0}
+.panel h2{font-size:22px;margin-bottom:6px}
+/* ---- liveliness ---- */
+@keyframes drift{to{background-position:-600px 400px,300px -500px}}
+@keyframes glow{0%,100%{box-shadow:0 0 12px #a35cff55}50%{box-shadow:0 0 30px #a35cffcc}}
+@keyframes shine{to{background-position:-200% 0}}
+@keyframes pulse{50%{text-shadow:0 0 24px #a35cff}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+@keyframes pop{40%{transform:scale(1.6);color:var(--purple)}}
+@keyframes blink{50%{transform:scale(1.35)}}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.6;background-image:radial-gradient(2px 2px at 20px 30px,#cbb3ff,transparent),radial-gradient(1.5px 1.5px at 120px 90px,#fff,transparent);background-size:240px 200px,310px 260px;animation:drift 90s linear infinite}
+.logo{animation:glow 3s ease-in-out infinite}
+h1{background:linear-gradient(90deg,#fff,#c9a6ff,#fff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:shine 6s linear infinite}
+.big{animation:pulse 2.5s ease-in-out infinite}
+.tick{animation:blink 2.2s ease-in-out infinite}
+li.task,.stat{transition:transform .15s,box-shadow .15s,border-color .15s}
+li.task:hover,.stat:hover{transform:translateY(-2px);box-shadow:0 8px 26px #a35cff33;border-color:var(--purple)}
+button{transition:filter .15s,transform .1s}button:hover{filter:brightness(1.2)}button:active{transform:scale(.94)}
+.pbar i{background:linear-gradient(90deg,#7a3dff,#c9a6ff);transition:width .5s ease}.pbar.ok i{background:linear-gradient(90deg,#1a8a4a,#3ecf7c)}
+.first li.task{animation:rise .45s both}.first li.task:nth-child(2){animation-delay:.07s}.first li.task:nth-child(3){animation-delay:.14s}.first li.task:nth-child(4){animation-delay:.21s}.first li.task:nth-child(5){animation-delay:.28s}.first li.task:nth-child(n+6){animation-delay:.35s}
+.cnt.pop{animation:pop .4s}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -60,14 +85,19 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
 <div id="gate" class="panel"></div>
 <div id="app" hidden>
 
+<div class="banner" id="banner" hidden></div>
+<div class="banner" id="next" hidden></div>
 <div class="stats" id="stats"></div>
 <div class="track" id="track" aria-hidden="true"><div class="flag"></div></div>
+<div class="panel" id="board"></div>
 
 <div class="panel">
   <div class="row">
     <div><label for="evName">Event</label><input id="evName" value="Regional final"></div>
     <div><label for="evDate">Event date</label><input id="evDate" type="date"></div>
     <div><button id="tpl" class="primary" style="width:100%">Load race-season template</button></div>
+    <div><button id="csv" style="width:100%">Export CSV</button></div>
+    <div style="grid-column:1/-1"><label for="ann">Team announcement (shown to everyone)</label><input id="ann" placeholder="e.g. Portfolio draft due Friday"></div>
   </div>
 </div>
 
@@ -76,6 +106,8 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
     <div style="grid-column:1/-1;min-width:200px"><label for="nt">Task</label><input id="nt" placeholder="e.g. Finish CFD report"></div>
     <div><label for="nn">Count needed (e.g. 4 videos)</label><input id="nn" type="number" min="1" max="99" value="1"></div>
     <div style="grid-column:1/-1"><label>Send to (each person gets their own counter)</label><div id="pick"></div><button type="button" id="all" class="del" style="padding:0">Select everyone / none</button></div>
+    <div><label for="np">Priority</label><select id="np"><option>Normal</option><option>High</option><option>Low</option></select></div>
+    <div style="grid-column:1/-1"><label for="nx">Notes or link (optional)</label><input id="nx" placeholder="e.g. Watch the CFD tutorial playlist"></div>
     <div><label for="nc">Area</label><select id="nc"><option>Design &amp; CAD</option><option>Manufacturing</option><option>Testing</option><option>Portfolio</option><option>Enterprise</option><option>Presentation</option><option>Logistics</option></select></div>
     <div><label for="nd">Due date</label><input id="nd" type="date"></div>
     <div><button id="add" class="primary" style="width:100%">Add task</button></div>
@@ -83,8 +115,10 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
 </form>
 
 <div class="bar" id="filters" role="group" aria-label="Filter tasks"></div>
+<div class="row" style="margin-bottom:10px"><div><input id="q" placeholder="Search tasks" aria-label="Search tasks"></div><div><select id="fa" aria-label="Filter by area"><option value="">All areas</option><option>Design &amp; CAD</option><option>Manufacturing</option><option>Testing</option><option>Portfolio</option><option>Enterprise</option><option>Presentation</option><option>Logistics</option></select></div><div><select id="fs" aria-label="Sort tasks"><option value="d">Sort: due date</option><option value="p">Sort: priority</option></select></div></div>
 <div class="meta" id="msg" role="status"></div>
-<ul id="list"></ul></div>
+<ul id="list"></ul>
+<div class="panel" id="chat"><h2>Team board</h2><div class="row"><div style="grid-column:1/-1"><label for="pt">Message the team</label><input id="pt" maxlength="300" placeholder="Share an update or ask for help"></div><div><button id="ps" class="primary" style="width:100%">Post</button></div></div><div id="posts"></div></div></div>
 </div>
 
 <script>
@@ -124,16 +158,18 @@ function start(){
   auth.onAuthStateChanged(function(u){
     unsubs.forEach(function(f){f()});unsubs=[];
     if(!u){ME.name=null;loginForm();return}
-    ME.name=u.email.split("@")[0];ME.owner=ME.name===LEAD;
+    ME.name=u.email.split("@")[0];ME.owner=ME.name===LEAD;$("f").hidden=!ME.owner;
     $("gate").hidden=true;$("app").hidden=false;
     unsubs.push(DB.collection("tasks").onSnapshot(function(s){S.tasks=s.docs.map(function(d){var x=d.data();x.id=d.id;return x});render()},err));
-    unsubs.push(DB.doc("settings/event").onSnapshot(function(s){var x=s.data()||{};S.event=x.name||S.event;S.date=x.date||"";if(document.activeElement!==$("evName"))$("evName").value=S.event;$("evDate").value=S.date;render()},err));
+    unsubs.push(DB.collection("posts").orderBy("at","desc").limit(30).onSnapshot(function(s){POSTS=s.docs.map(function(d){var x=d.data();x.id=d.id;return x});renderPosts()},err));
+    unsubs.push(DB.doc("settings/event").onSnapshot(function(s){var x=s.data()||{};S.event=x.name||S.event;S.date=x.date||"";S.ann=x.announcement||"";if(document.activeElement!==$("ann"))$("ann").value=S.ann;if(document.activeElement!==$("evName"))$("evName").value=S.event;$("evDate").value=S.date;render()},err));
     render();
   });
 }
 
-$("evDate").onchange=function(){if(ME.owner)DB.doc("settings/event").set({name:S.event,date:this.value}).catch(err)};
-$("evName").onchange=function(){if(ME.owner)DB.doc("settings/event").set({name:this.value,date:S.date}).catch(err)};
+$("evDate").onchange=function(){if(ME.owner)DB.doc("settings/event").set({name:S.event,date:this.value},{merge:true}).catch(err)};
+$("evName").onchange=function(){if(ME.owner)DB.doc("settings/event").set({name:this.value,date:S.date},{merge:true}).catch(err)};
+$("ann").onchange=function(){if(ME.owner)DB.doc("settings/event").set({announcement:this.value.trim()},{merge:true}).catch(err)};
 $("tpl").onclick=function(){
   if(!ME.owner)return;
   if(!S.date){note("Set the event date first so deadlines can be counted back from it.");return}
@@ -146,9 +182,21 @@ $("add").onclick=function(){
   if(!t||!$("nd").value){note("Add a task name and a due date.");return}
   var as=Array.prototype.filter.call(document.querySelectorAll("#pick input"),function(c){return c.checked}).map(function(c){return c.value});
   var n=Math.max(1,Math.min(99,parseInt($("nn").value,10)||1));
-  note("");DB.collection("tasks").add({t:t,assignees:as,target:n,progress:{},c:$("nc").value,d:$("nd").value,by:ME.name}).catch(err);
-  $("nt").value="";$("nt").focus()};
+  note("");DB.collection("tasks").add({t:t,assignees:as,target:n,progress:{},p:$("np").value,notes:$("nx").value.trim(),c:$("nc").value,d:$("nd").value,by:ME.name}).catch(err);
+  $("nt").value="";$("nx").value="";$("nt").focus()};
 
+var BUMP="",POSTS=[];
+function link(s){return s.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--purple)">$1</a>')}
+function pr(x){return x.p==="High"?0:x.p==="Low"?2:1}
+function burst(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+  var c=document.createElement("canvas");c.style.cssText="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:99";c.width=innerWidth;c.height=innerHeight;document.body.appendChild(c);
+  var g=c.getContext("2d"),P=[],cols=["#a35cff","#c9a6ff","#ffffff","#3ecf7c","#f0b429"],t=0;
+  for(var i=0;i<100;i++)P.push({x:innerWidth/2,y:innerHeight*.6,vx:(Math.random()-.5)*15,vy:-Math.random()*15-4,s:Math.random()*6+4,c:cols[i%5],r:Math.random()*6});
+  (function f(){g.clearRect(0,0,c.width,c.height);
+    P.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=.35;p.r+=.2;g.fillStyle=p.c;g.save();g.translate(p.x,p.y);g.rotate(p.r);g.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);g.restore()});
+    if(++t<110)requestAnimationFrame(f);else c.remove()})();
+}
 function parts(x){return x.assignees&&x.assignees.length?x.assignees:["team"]}
 function cnt(x,p){return(x.progress&&x.progress[p])||0}
 function tgt(x){return x.target||1}
@@ -162,7 +210,7 @@ function render(){
   $("daysLbl").textContent=n===null?"Waiting for the event date":n<0?S.event+" has passed":"days to "+S.event;
   $("evName").closest(".panel").hidden=!ME.owner;$("f").hidden=!ME.owner;
   $("who").innerHTML="Signed in as <b>"+esc(nm(ME.name))+"</b>"+(ME.owner?" (owner)":"")+' · <button class="del" id="out">Sign out</button>';
-  $("out").onclick=function(){auth.signOut()};
+  $("out").onclick=function(){auth.signOut().then(function(){location.reload()})};
   var T=S.tasks,done=T.filter(isDone).length;
   var late=T.filter(function(x){return!isDone(x)&&diff(x.d)<0}).length;
   var week=T.filter(function(x){var k=diff(x.d);return!isDone(x)&&k>=0&&k<=7}).length;
@@ -170,27 +218,52 @@ function render(){
   var start=today(),end=S.date?parse(S.date):null,tk="";
   if(end&&end>start){T.forEach(function(x){var p=Math.min(100,Math.max(0,(parse(x.d)-start)/(end-start)*100));tk+='<span class="tick'+(isDone(x)?" done":diff(x.d)<0?" late":"")+'" style="left:'+p+'%" title="'+esc(x.t)+'"></span>'})}
   $("track").innerHTML='<div class="flag"></div>'+tk;
+  $("banner").hidden=!S.ann;$("banner").innerHTML="<b>Announcement</b> "+link(esc(S.ann||""));
+  var mine=T.filter(function(x){return parts(x).indexOf(ME.name)>=0&&cnt(x,ME.name)<tgt(x)}).sort(function(a,b){return a.d<b.d?-1:1})[0],hasAny=T.some(function(x){return parts(x).indexOf(ME.name)>=0});
+  $("next").hidden=!hasAny;
+  $("next").innerHTML=mine?"<b>Your next task:</b> "+esc(mine.t)+" ("+cnt(mine,ME.name)+"/"+tgt(mine)+"), "+rel(diff(mine.d)).toLowerCase():"<b>You’re all caught up.</b> Nice work.";
+  var B=ROSTER.map(function(n){var d=0,t=0;T.forEach(function(x){if(parts(x).indexOf(n)>=0){d+=Math.min(cnt(x,n),tgt(x));t+=tgt(x)}});return{n:n,d:d,t:t,pc:t?Math.round(d/t*100):0}}).sort(function(a,b){return b.pc-a.pc||b.d-a.d});
+  $("board").innerHTML="<h2>Team progress</h2>"+B.map(function(r,i){return'<div class="pr"><span class="meta"><b>'+esc(nm(r.n))+'</b>'+(i===0&&r.pc>0?' <span class="chip">Leading</span>':"")+'</span><div class="pbar'+(r.t&&r.pc>=100?" ok":"")+'"><i style="width:'+r.pc+'%"></i></div><span class="cnt">'+(r.t?r.d+"/"+r.t:"–")+'</span></div>'}).join("");
   var F=[["open","Open"],["mine","Mine"],["late","Overdue"],["done","Done"],["all","All"]];
   $("filters").innerHTML=F.map(function(f){return'<button data-f="'+f[0]+'" aria-pressed="'+(S.filter===f[0])+'">'+f[1]+'</button>'}).join("");
   Array.prototype.forEach.call($("filters").children,function(b){b.onclick=function(){S.filter=b.dataset.f;render()}});
-  var L=T.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0}).filter(function(x){var f=S.filter,d=isDone(x);
+  var q=$("q").value.trim().toLowerCase(),fa=$("fa").value;
+  var L=T.slice().sort(function(a,b){if($("fs").value==="p"&&pr(a)!==pr(b))return pr(a)-pr(b);return a.d<b.d?-1:a.d>b.d?1:0}).filter(function(x){if(fa&&x.c!==fa)return false;if(q&&((x.t||"")+" "+(x.notes||"")).toLowerCase().indexOf(q)<0)return false;var f=S.filter,d=isDone(x);
     return f==="all"||(f==="open"&&!d)||(f==="done"&&d)||(f==="late"&&!d&&diff(x.d)<0)||(f==="mine"&&parts(x).indexOf(ME.name)>=0&&cnt(x,ME.name)<tgt(x))});
+  $("list").className=S.rendered?"":"first";
   $("list").innerHTML=L.length?L.map(function(x){var k=diff(x.d),d=isDone(x),t=tgt(x);
     var cls="task"+(d?" done":k<0?" late":k<=7?" soon":"");
     var rows=parts(x).map(function(p){var c=cnt(x,p),can=ME.owner||p===ME.name||p==="team";
       return'<div class="pr"><span class="meta"><b>'+esc(who(p))+'</b></span><div class="pbar'+(c>=t?" ok":"")+'"><i style="width:'+Math.min(100,c/t*100)+'%"></i></div><span>'
       +(can?'<button class="step" data-id="'+x.id+'" data-p="'+p+'" data-d="-1" aria-label="Subtract one for '+esc(who(p))+'">−</button>':"")
-      +'<span class="cnt">'+c+'/'+t+'</span>'
+      +'<span class="cnt'+(BUMP===x.id+p?" pop":"")+'">'+c+'/'+t+'</span>'
       +(can?'<button class="step" data-id="'+x.id+'" data-p="'+p+'" data-d="1" aria-label="Add one for '+esc(who(p))+'">+</button>':"")+'</span></div>'}).join("");
-    return'<li class="'+cls+'"><div><div class="t">'+esc(x.t)+'</div><div class="meta"><span class="chip">'+esc(x.c)+'</span>'+(ME.owner?'<button class="del" data-del="'+x.id+'">Delete</button>':"")+'</div>'+rows+'</div>'
+    return'<li class="'+cls+'"><div><div class="t">'+esc(x.t)+'</div><div class="meta"><span class="chip">'+esc(x.c)+'</span>'+(x.p==="High"?'<span class="chip pri-High">High priority</span>':x.p==="Low"?'<span class="chip">Low priority</span>':"")+(ME.owner?'<button class="del" data-del="'+x.id+'">Delete</button>':"")+'</div>'+(x.notes?'<div class="meta">'+link(esc(x.notes))+'</div>':"")+rows+'</div>'
     +'<div class="due"><b>'+(d?"Done":rel(k))+'</b>'+fmt(x.d)+'</div></li>'}).join("")
     :'<li class="empty">'+(T.length?"Nothing here. Try another filter.":"No tasks yet. "+(ME.owner?"Set the event date and load the template, or add the first task above.":"vkhahan will add tasks here."))+'</li>';
   Array.prototype.forEach.call(document.querySelectorAll("[data-d]"),function(b){b.onclick=function(){
     var x=S.tasks.filter(function(y){return y.id===b.dataset.id})[0];if(!x)return;
     var v=Math.max(0,Math.min(tgt(x),cnt(x,b.dataset.p)+(+b.dataset.d)));var o={};o["progress."+b.dataset.p]=v;
+    BUMP=b.dataset.id+b.dataset.p;if(+b.dataset.d>0&&v>=tgt(x)&&cnt(x,b.dataset.p)<tgt(x))burst();
     DB.doc("tasks/"+b.dataset.id).update(o).catch(err)}});
   Array.prototype.forEach.call(document.querySelectorAll("[data-del]"),function(b){b.onclick=function(){DB.doc("tasks/"+b.dataset.del).delete().catch(err)}});
+  BUMP="";S.rendered=true;
 }
+function renderPosts(){
+  if(!ME.name)return;
+  $("posts").innerHTML=POSTS.map(function(p){return'<div class="post"><b>'+esc(nm(p.by))+'</b> <span class="meta">'+new Date(p.at).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+(ME.owner?' <button class="del" data-dp="'+p.id+'">Delete</button>':"")+'</span><div>'+link(esc(p.text))+'</div></div>'}).join("")||'<p class="meta">No messages yet.</p>';
+  Array.prototype.forEach.call(document.querySelectorAll("[data-dp]"),function(b){b.onclick=function(){DB.doc("posts/"+b.dataset.dp).delete().catch(err)}});
+}
+$("ps").onclick=function(){var t=$("pt").value.trim();if(!t)return;DB.collection("posts").add({by:ME.name,text:t,at:Date.now()}).catch(err);$("pt").value=""};
+$("pt").onkeydown=function(e){if(e.key==="Enter")$("ps").click()};
+["q","fa","fs"].forEach(function(i){$(i).oninput=function(){render()}});
+$("csv").onclick=function(){
+  if(!ME.owner)return;
+  var R=[["Task","Area","Priority","Due","Target","Person","Progress"]];
+  S.tasks.forEach(function(x){parts(x).forEach(function(p){R.push([x.t,x.c,x.p||"Normal",x.d,tgt(x),who(p),cnt(x,p)])})});
+  var csv=R.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="void-racers-tasks.csv";a.click();
+};
 start();
 </script>
 </body>
