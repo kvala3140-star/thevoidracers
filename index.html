@@ -11,7 +11,7 @@
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background-color:var(--bg);background-image:radial-gradient(ellipse at 50% -10%,#2a1260 0,transparent 60%);background-attachment:fixed;color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif}
-.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+.wrap{max-width:1600px;margin:0 auto;padding:20px 16px 48px}
 h1,h2,.big{font-family:"Barlow Condensed",Impact,sans-serif;font-weight:700;margin:0}
 header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;border-bottom:4px solid var(--purple);padding-bottom:14px}
 h1{font:800 clamp(22px,6vw,36px)/1.05 Orbitron,"Barlow Condensed",sans-serif;letter-spacing:.04em}.brand{display:flex;gap:14px;align-items:center}.logo{width:84px;height:84px;border-radius:10px;border:1px solid var(--line);object-fit:cover}
@@ -57,12 +57,14 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
 .gl{position:sticky;left:0;z-index:2;background:var(--surface);font-size:14px;padding:6px 8px 6px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gl.dn{opacity:.55;text-decoration:line-through}
 .gt{position:relative;height:40px;background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px)}
-.gb{--c:#a35cff;position:absolute;top:10px;height:20px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--c) 28%,transparent);border:1px solid var(--c)}
-.gb:hover{filter:brightness(1.35)}.gb i{display:block;height:100%;background:var(--c)}
+.gb{position:absolute;top:10px;height:20px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--c,#a35cff) 28%,transparent);border:1px solid var(--c,#a35cff)}
+.gb:hover{filter:brightness(1.35)}.gb i{display:block;height:100%;background:var(--c,#a35cff)}
 .gtoday,.gev{position:absolute;top:0;bottom:0;width:2px;z-index:1}.gtoday{background:var(--amber)}.gev{background:var(--ink)}
 .gw{position:absolute;top:3px;font-size:11px;color:var(--mute);transform:translateX(3px);white-space:nowrap}
 .gleg{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;margin:6px 0 10px;color:var(--mute)}
 .gk{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+#gantt.full{position:fixed;inset:0;z-index:50;margin:0;border-radius:0;overflow:auto;background:var(--bg);padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 24px}
+#gantt.full .gt{height:54px}#gantt.full .gb{top:14px;height:26px}#gantt.full .gl{font-size:16px}
 /* ---- liveliness ---- */
 @keyframes drift{to{background-position:-600px 400px,300px -500px}}
 @keyframes glow{0%,100%{box-shadow:0 0 12px #a35cff55}50%{box-shadow:0 0 30px #a35cffcc}}
@@ -214,8 +216,8 @@ function renderPeople(){
 function sd(x){return x.s||iso(new Date(parse(x.d).getTime()-6*DAY))}
 function prog(x){var P=sel(x),t=tgt(x),s=0;P.forEach(function(p){s+=Math.min(cnt(x,p),t)});return s/(P.length*t)}
 function renderGantt(T){
-  var el=$("gantt");T=T.filter(showTask);
-  if(!T.length){el.innerHTML="<h2>Gantt chart</h2><p class=\"meta\">"+(S.who.length?"No tasks for the selected people.":"Tasks will show up here as bars from their start date to their due date.")+"</p>";return}
+  var el=$("gantt");T=T.filter(showTask);var hd='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Gantt chart</h2><button id="gfs">'+(S.gfull?"Close":"Full screen")+'</button></div>';el.classList.toggle("full",!!S.gfull);document.body.style.overflow=S.gfull?"hidden":"";
+  if(!T.length){el.innerHTML=hd+"<p class=\"meta\">"+(S.who.length?"No tasks for the selected people.":"Tasks will show up here as bars from their start date to their due date.")+"</p>";return}
   var R=T.slice().sort(function(a,b){var x=sd(a),y=sd(b);return x<y?-1:x>y?1:a.d<b.d?-1:1});
   var t0=parse(sd(R[0])),t1=parse(R[0].d),td=today(),ev=S.date?parse(S.date):null;
   R.forEach(function(x){var e=parse(x.d);if(e>t1)t1=e});
@@ -227,7 +229,7 @@ function renderGantt(T){
     var tip=x.t+" ("+pri+" priority): "+fmt(sd(x))+" to "+fmt(x.d)+", "+p+"% done";
     return'<div class="gr"><div class="gl'+(sel(x).every(function(p){return cnt(x,p)>=tgt(x)})?" dn":"")+'" title="'+esc(tip)+'">'+esc(x.t)+'<br><span class="meta" style="font-size:11px">'+esc(sel(x).map(fn).join(", "))+'</span></div><div class="gt" style="background-size:'+(7/N*100)+'% 100%">'+lines+'<div class="gb g-'+pri+'" style="left:'+pc(s)+'%;width:'+w+'%" title="'+esc(tip)+'"><i style="width:'+p+'%"></i></div></div></div>'}).join("");
   var leg='<div class="gleg"><span class="g-High"><i class="gk"></i>High priority</span><span class="g-Normal"><i class="gk"></i>Normal</span><span class="g-Low"><i class="gk"></i>Low</span><span><i class="gk" style="background:var(--amber);width:3px"></i>Today</span><span><i class="gk" style="background:var(--ink);width:3px"></i>Event</span><span>Solid part of a bar = progress</span></div>';
-  el.innerHTML="<h2>Gantt chart</h2>"+leg+'<div class="gscroll"><div style="min-width:'+(Math.max(720,N*9)+190)+'px"><div class="gr"><div class="gl"></div><div class="gt" style="height:22px;background:none">'+head+'</div></div>'+rows+"</div></div>";
+  el.innerHTML=hd+leg+'<div class="gscroll"><div style="min-width:'+(Math.max(720,N*9)+190)+'px"><div class="gr"><div class="gl"></div><div class="gt" style="height:22px;background:none">'+head+'</div></div>'+rows+"</div></div>";
 }
 function pr(x){return x.p==="High"?0:x.p==="Low"?2:1}
 function burst(){
@@ -306,6 +308,8 @@ $("csv").onclick=function(){
   var csv=R.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
   var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="void-racers-tasks.csv";a.click();
 };
+$("gantt").addEventListener("click",function(e){if(e.target.id==="gfs"){S.gfull=!S.gfull;render()}});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&S.gfull){S.gfull=false;render()}});
 start();
 </script>
 </body>
