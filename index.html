@@ -51,6 +51,18 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
 .pri-High{background:var(--red);color:#12060a;font-weight:700}
 .post{border-top:1px solid var(--line);padding:8px 0}
 .panel h2{font-size:22px;margin-bottom:6px}
+.g-High{--c:#ff4b6e}.g-Normal{--c:#a35cff}.g-Low{--c:#35c4d8}
+.gscroll{overflow-x:auto}
+.gr{display:grid;grid-template-columns:170px 1fr;align-items:center;border-top:1px solid var(--line)}
+.gl{position:sticky;left:0;z-index:2;background:var(--surface);font-size:14px;padding:6px 8px 6px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl.dn{opacity:.55;text-decoration:line-through}
+.gt{position:relative;height:30px;background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px)}
+.gb{--c:#a35cff;position:absolute;top:5px;height:20px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--c) 28%,transparent);border:1px solid var(--c)}
+.gb:hover{filter:brightness(1.35)}.gb i{display:block;height:100%;background:var(--c)}
+.gtoday,.gev{position:absolute;top:0;bottom:0;width:2px;z-index:1}.gtoday{background:var(--amber)}.gev{background:var(--ink)}
+.gw{position:absolute;top:3px;font-size:11px;color:var(--mute);transform:translateX(3px);white-space:nowrap}
+.gleg{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;margin:6px 0 10px;color:var(--mute)}
+.gk{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
 /* ---- liveliness ---- */
 @keyframes drift{to{background-position:-600px 400px,300px -500px}}
 @keyframes glow{0%,100%{box-shadow:0 0 12px #a35cff55}50%{box-shadow:0 0 30px #a35cffcc}}
@@ -90,6 +102,7 @@ button{transition:filter .15s,transform .1s}button:hover{filter:brightness(1.2)}
 <div class="stats" id="stats"></div>
 <div class="track" id="track" aria-hidden="true"><div class="flag"></div></div>
 <div class="panel" id="board"></div>
+<div class="panel" id="gantt"></div>
 
 <div class="panel">
   <div class="row">
@@ -109,6 +122,7 @@ button{transition:filter .15s,transform .1s}button:hover{filter:brightness(1.2)}
     <div><label for="np">Priority</label><select id="np"><option>Normal</option><option>High</option><option>Low</option></select></div>
     <div style="grid-column:1/-1"><label for="nx">Notes or link (optional)</label><input id="nx" placeholder="e.g. Watch the CFD tutorial playlist"></div>
     <div><label for="nc">Area</label><select id="nc"><option>Design &amp; CAD</option><option>Manufacturing</option><option>Testing</option><option>Portfolio</option><option>Enterprise</option><option>Presentation</option><option>Logistics</option></select></div>
+    <div><label for="ns">Start date</label><input id="ns" type="date"></div>
     <div><label for="nd">Due date</label><input id="nd" type="date"></div>
     <div><button id="add" class="primary" style="width:100%">Add task</button></div>
   </div>
@@ -175,18 +189,37 @@ $("tpl").onclick=function(){
   if(!S.date){note("Set the event date first so deadlines can be counted back from it.");return}
   if(S.tasks.length&&!armed){armed=true;note("You already have tasks. Click again to add the template anyway.");return}
   armed=false;note("");
-  TPL.forEach(function(t){DB.collection("tasks").add({t:t[0],assignees:[],target:1,progress:{},c:t[1],d:iso(new Date(parse(S.date).getTime()-t[2]*DAY)),done:false}).catch(err)})};
+  TPL.forEach(function(t){DB.collection("tasks").add({t:t[0],assignees:[],target:1,progress:{},c:t[1],d:iso(new Date(parse(S.date).getTime()-t[2]*DAY)),s:iso(new Date(parse(S.date).getTime()-(t[2]+7)*DAY)),p:/freeze|submission|scrutineering/i.test(t[0])?"High":"Normal",done:false}).catch(err)})};
 $("all").onclick=function(){var b=document.querySelectorAll("#pick input");var on=Array.prototype.every.call(b,function(c){return c.checked});Array.prototype.forEach.call(b,function(c){c.checked=!on})};
 $("add").onclick=function(){
   var t=$("nt").value.trim();
   if(!t||!$("nd").value){note("Add a task name and a due date.");return}
+  var sv=$("ns").value||iso(today());if(sv>$("nd").value){note("The start date must be on or before the due date.");return}
   var as=Array.prototype.filter.call(document.querySelectorAll("#pick input"),function(c){return c.checked}).map(function(c){return c.value});
   var n=Math.max(1,Math.min(99,parseInt($("nn").value,10)||1));
-  note("");DB.collection("tasks").add({t:t,assignees:as,target:n,progress:{},p:$("np").value,notes:$("nx").value.trim(),c:$("nc").value,d:$("nd").value,by:ME.name}).catch(err);
+  note("");DB.collection("tasks").add({t:t,assignees:as,target:n,progress:{},s:sv,p:$("np").value,notes:$("nx").value.trim(),c:$("nc").value,d:$("nd").value,by:ME.name}).catch(err);
   $("nt").value="";$("nx").value="";$("nt").focus()};
 
 var BUMP="",POSTS=[];
 function link(s){return s.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--purple)">$1</a>')}
+function sd(x){return x.s||iso(new Date(parse(x.d).getTime()-6*DAY))}
+function prog(x){var P=parts(x),t=tgt(x),s=0;P.forEach(function(p){s+=Math.min(cnt(x,p),t)});return s/(P.length*t)}
+function renderGantt(T){
+  var el=$("gantt");
+  if(!T.length){el.innerHTML="<h2>Gantt chart</h2><p class=\"meta\">Tasks will show up here as bars from their start date to their due date.</p>";return}
+  var R=T.slice().sort(function(a,b){var x=sd(a),y=sd(b);return x<y?-1:x>y?1:a.d<b.d?-1:1});
+  var t0=parse(sd(R[0])),t1=parse(R[0].d),td=today(),ev=S.date?parse(S.date):null;
+  R.forEach(function(x){var e=parse(x.d);if(e>t1)t1=e});
+  if(td<t0)t0=td;if(td>t1)t1=td;if(ev){if(ev>t1)t1=ev;if(ev<t0)t0=ev}
+  var N=Math.round((t1-t0)/DAY)+1,pc=function(d){return Math.round((d-t0)/DAY)/N*100};
+  var head="";for(var i=0;i<N;i+=7)head+='<span class="gw" style="left:'+(i/N*100)+'%">'+fmt(iso(new Date(t0.getTime()+i*DAY)))+'</span>';
+  var lines=(td>=t0&&td<=t1?'<span class="gtoday" style="left:'+pc(td)+'%" title="Today"></span>':"")+(ev&&ev>=t0&&ev<=t1?'<span class="gev" style="left:'+pc(ev)+'%" title="'+esc(S.event)+'"></span>':"");
+  var rows=R.map(function(x){var s=parse(sd(x)),e=parse(x.d),w=Math.max((Math.round((e-s)/DAY)+1)/N*100,1.2),p=Math.round(prog(x)*100),pri=x.p||"Normal";
+    var tip=x.t+" ("+pri+" priority): "+fmt(sd(x))+" to "+fmt(x.d)+", "+p+"% done";
+    return'<div class="gr"><div class="gl'+(isDone(x)?" dn":"")+'" title="'+esc(tip)+'">'+esc(x.t)+'</div><div class="gt" style="background-size:'+(7/N*100)+'% 100%">'+lines+'<div class="gb g-'+pri+'" style="left:'+pc(s)+'%;width:'+w+'%" title="'+esc(tip)+'"><i style="width:'+p+'%"></i></div></div></div>'}).join("");
+  var leg='<div class="gleg"><span class="g-High"><i class="gk"></i>High priority</span><span class="g-Normal"><i class="gk"></i>Normal</span><span class="g-Low"><i class="gk"></i>Low</span><span><i class="gk" style="background:var(--amber);width:3px"></i>Today</span><span><i class="gk" style="background:var(--ink);width:3px"></i>Event</span><span>Solid part of a bar = progress</span></div>';
+  el.innerHTML="<h2>Gantt chart</h2>"+leg+'<div class="gscroll"><div style="min-width:'+(Math.max(720,N*9)+170)+'px"><div class="gr"><div class="gl"></div><div class="gt" style="height:22px;background:none">'+head+'</div></div>'+rows+"</div></div>";
+}
 function pr(x){return x.p==="High"?0:x.p==="Low"?2:1}
 function burst(){
   if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
@@ -208,7 +241,7 @@ function render(){
   var n=S.date?diff(S.date):null;
   $("days").textContent=n===null?"–":n<0?"Done":n;
   $("daysLbl").textContent=n===null?"Waiting for the event date":n<0?S.event+" has passed":"days to "+S.event;
-  $("evName").closest(".panel").hidden=!ME.owner;$("f").hidden=!ME.owner;
+  $("evName").closest(".panel").hidden=!ME.owner;if(!$("ns").value)$("ns").value=iso(today());$("f").hidden=!ME.owner;
   $("who").innerHTML="Signed in as <b>"+esc(nm(ME.name))+"</b>"+(ME.owner?" (owner)":"")+' · <button class="del" id="out">Sign out</button>';
   $("out").onclick=function(){auth.signOut().then(function(){location.reload()})};
   var T=S.tasks,done=T.filter(isDone).length;
@@ -247,7 +280,7 @@ function render(){
     BUMP=b.dataset.id+b.dataset.p;if(+b.dataset.d>0&&v>=tgt(x)&&cnt(x,b.dataset.p)<tgt(x))burst();
     DB.doc("tasks/"+b.dataset.id).update(o).catch(err)}});
   Array.prototype.forEach.call(document.querySelectorAll("[data-del]"),function(b){b.onclick=function(){DB.doc("tasks/"+b.dataset.del).delete().catch(err)}});
-  BUMP="";S.rendered=true;
+  BUMP="";S.rendered=true;renderGantt(T);
 }
 function renderPosts(){
   if(!ME.name)return;
