@@ -53,11 +53,11 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
 .panel h2{font-size:22px;margin-bottom:6px}
 .g-High{--c:#ff4b6e}.g-Normal{--c:#a35cff}.g-Low{--c:#35c4d8}
 .gscroll{overflow-x:auto}
-.gr{display:grid;grid-template-columns:170px 1fr;align-items:center;border-top:1px solid var(--line)}
+.gr{display:grid;grid-template-columns:190px 1fr;align-items:center;border-top:1px solid var(--line)}
 .gl{position:sticky;left:0;z-index:2;background:var(--surface);font-size:14px;padding:6px 8px 6px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gl.dn{opacity:.55;text-decoration:line-through}
-.gt{position:relative;height:30px;background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px)}
-.gb{--c:#a35cff;position:absolute;top:5px;height:20px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--c) 28%,transparent);border:1px solid var(--c)}
+.gt{position:relative;height:40px;background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px)}
+.gb{--c:#a35cff;position:absolute;top:10px;height:20px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--c) 28%,transparent);border:1px solid var(--c)}
 .gb:hover{filter:brightness(1.35)}.gb i{display:block;height:100%;background:var(--c)}
 .gtoday,.gev{position:absolute;top:0;bottom:0;width:2px;z-index:1}.gtoday{background:var(--amber)}.gev{background:var(--ink)}
 .gw{position:absolute;top:3px;font-size:11px;color:var(--mute);transform:translateX(3px);white-space:nowrap}
@@ -102,6 +102,7 @@ button{transition:filter .15s,transform .1s}button:hover{filter:brightness(1.2)}
 <div class="stats" id="stats"></div>
 <div class="track" id="track" aria-hidden="true"><div class="flag"></div></div>
 <div class="panel" id="board"></div>
+<div class="bar" id="people" role="group" aria-label="Show tasks for"></div>
 <div class="panel" id="gantt"></div>
 
 <div class="panel">
@@ -138,7 +139,7 @@ button{transition:filter .15s,transform .1s}button:hover{filter:brightness(1.2)}
 <script>
 var ROSTER=["vkhahan","ialfarhan","vbudki","emusa","aputhoor"],LEAD="vkhahan",NAMES={vkhahan:"Vala Khahan",ialfarhan:"Ilyas Alfarhan",vbudki:"Vivaan Budki",emusa:"Ethan Musa",aputhoor:"Andrew Puthoor"};
 function nm(u){return NAMES[u]||u}
-var S={event:"Regional final",date:"",tasks:[],members:{},filter:"open"};
+var S={event:"Regional final",date:"",tasks:[],members:{},filter:"open",who:[]};
 var ME={uid:null,name:null,owner:false},DB=null,armed=false,seeded=false;
 var $=function(i){return document.getElementById(i)},DAY=864e5;
 function today(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
@@ -202,11 +203,19 @@ $("add").onclick=function(){
 
 var BUMP="",POSTS=[];
 function link(s){return s.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--purple)">$1</a>')}
+function fn(p){return p==="team"?"Whole team":nm(p).split(" ")[0]}
+function sel(x){var P=parts(x);return S.who.length?P.filter(function(p){return S.who.indexOf(p)>=0}):P}
+function showTask(x){return!S.who.length||sel(x).length>0}
+function renderPeople(){
+  var w=S.who;
+  $("people").innerHTML='<span class="meta"><b>Show tasks for:</b></span><button data-w="*" aria-pressed="'+(!w.length)+'">Everyone</button>'+ROSTER.concat(["team"]).map(function(p){return'<button data-w="'+p+'" aria-pressed="'+(w.indexOf(p)>=0)+'">'+esc(fn(p))+'</button>'}).join("");
+  Array.prototype.forEach.call($("people").querySelectorAll("button"),function(b){b.onclick=function(){var v=b.dataset.w;if(v==="*")S.who=[];else{var i=S.who.indexOf(v);if(i<0)S.who.push(v);else S.who.splice(i,1)}render()}});
+}
 function sd(x){return x.s||iso(new Date(parse(x.d).getTime()-6*DAY))}
-function prog(x){var P=parts(x),t=tgt(x),s=0;P.forEach(function(p){s+=Math.min(cnt(x,p),t)});return s/(P.length*t)}
+function prog(x){var P=sel(x),t=tgt(x),s=0;P.forEach(function(p){s+=Math.min(cnt(x,p),t)});return s/(P.length*t)}
 function renderGantt(T){
-  var el=$("gantt");
-  if(!T.length){el.innerHTML="<h2>Gantt chart</h2><p class=\"meta\">Tasks will show up here as bars from their start date to their due date.</p>";return}
+  var el=$("gantt");T=T.filter(showTask);
+  if(!T.length){el.innerHTML="<h2>Gantt chart</h2><p class=\"meta\">"+(S.who.length?"No tasks for the selected people.":"Tasks will show up here as bars from their start date to their due date.")+"</p>";return}
   var R=T.slice().sort(function(a,b){var x=sd(a),y=sd(b);return x<y?-1:x>y?1:a.d<b.d?-1:1});
   var t0=parse(sd(R[0])),t1=parse(R[0].d),td=today(),ev=S.date?parse(S.date):null;
   R.forEach(function(x){var e=parse(x.d);if(e>t1)t1=e});
@@ -216,9 +225,9 @@ function renderGantt(T){
   var lines=(td>=t0&&td<=t1?'<span class="gtoday" style="left:'+pc(td)+'%" title="Today"></span>':"")+(ev&&ev>=t0&&ev<=t1?'<span class="gev" style="left:'+pc(ev)+'%" title="'+esc(S.event)+'"></span>':"");
   var rows=R.map(function(x){var s=parse(sd(x)),e=parse(x.d),w=Math.max((Math.round((e-s)/DAY)+1)/N*100,1.2),p=Math.round(prog(x)*100),pri=x.p||"Normal";
     var tip=x.t+" ("+pri+" priority): "+fmt(sd(x))+" to "+fmt(x.d)+", "+p+"% done";
-    return'<div class="gr"><div class="gl'+(isDone(x)?" dn":"")+'" title="'+esc(tip)+'">'+esc(x.t)+'</div><div class="gt" style="background-size:'+(7/N*100)+'% 100%">'+lines+'<div class="gb g-'+pri+'" style="left:'+pc(s)+'%;width:'+w+'%" title="'+esc(tip)+'"><i style="width:'+p+'%"></i></div></div></div>'}).join("");
+    return'<div class="gr"><div class="gl'+(sel(x).every(function(p){return cnt(x,p)>=tgt(x)})?" dn":"")+'" title="'+esc(tip)+'">'+esc(x.t)+'<br><span class="meta" style="font-size:11px">'+esc(sel(x).map(fn).join(", "))+'</span></div><div class="gt" style="background-size:'+(7/N*100)+'% 100%">'+lines+'<div class="gb g-'+pri+'" style="left:'+pc(s)+'%;width:'+w+'%" title="'+esc(tip)+'"><i style="width:'+p+'%"></i></div></div></div>'}).join("");
   var leg='<div class="gleg"><span class="g-High"><i class="gk"></i>High priority</span><span class="g-Normal"><i class="gk"></i>Normal</span><span class="g-Low"><i class="gk"></i>Low</span><span><i class="gk" style="background:var(--amber);width:3px"></i>Today</span><span><i class="gk" style="background:var(--ink);width:3px"></i>Event</span><span>Solid part of a bar = progress</span></div>';
-  el.innerHTML="<h2>Gantt chart</h2>"+leg+'<div class="gscroll"><div style="min-width:'+(Math.max(720,N*9)+170)+'px"><div class="gr"><div class="gl"></div><div class="gt" style="height:22px;background:none">'+head+'</div></div>'+rows+"</div></div>";
+  el.innerHTML="<h2>Gantt chart</h2>"+leg+'<div class="gscroll"><div style="min-width:'+(Math.max(720,N*9)+190)+'px"><div class="gr"><div class="gl"></div><div class="gt" style="height:22px;background:none">'+head+'</div></div>'+rows+"</div></div>";
 }
 function pr(x){return x.p==="High"?0:x.p==="Low"?2:1}
 function burst(){
@@ -261,12 +270,12 @@ function render(){
   $("filters").innerHTML=F.map(function(f){return'<button data-f="'+f[0]+'" aria-pressed="'+(S.filter===f[0])+'">'+f[1]+'</button>'}).join("");
   Array.prototype.forEach.call($("filters").children,function(b){b.onclick=function(){S.filter=b.dataset.f;render()}});
   var q=$("q").value.trim().toLowerCase(),fa=$("fa").value;
-  var L=T.slice().sort(function(a,b){if($("fs").value==="p"&&pr(a)!==pr(b))return pr(a)-pr(b);return a.d<b.d?-1:a.d>b.d?1:0}).filter(function(x){if(fa&&x.c!==fa)return false;if(q&&((x.t||"")+" "+(x.notes||"")).toLowerCase().indexOf(q)<0)return false;var f=S.filter,d=isDone(x);
+  var L=T.slice().sort(function(a,b){if($("fs").value==="p"&&pr(a)!==pr(b))return pr(a)-pr(b);return a.d<b.d?-1:a.d>b.d?1:0}).filter(function(x){if(!showTask(x))return false;if(fa&&x.c!==fa)return false;if(q&&((x.t||"")+" "+(x.notes||"")).toLowerCase().indexOf(q)<0)return false;var f=S.filter,d=isDone(x);
     return f==="all"||(f==="open"&&!d)||(f==="done"&&d)||(f==="late"&&!d&&diff(x.d)<0)||(f==="mine"&&parts(x).indexOf(ME.name)>=0&&cnt(x,ME.name)<tgt(x))});
   $("list").className=S.rendered?"":"first";
   $("list").innerHTML=L.length?L.map(function(x){var k=diff(x.d),d=isDone(x),t=tgt(x);
     var cls="task"+(d?" done":k<0?" late":k<=7?" soon":"");
-    var rows=parts(x).map(function(p){var c=cnt(x,p),can=ME.owner||p===ME.name||p==="team";
+    var rows=sel(x).map(function(p){var c=cnt(x,p),can=ME.owner||p===ME.name||p==="team";
       return'<div class="pr"><span class="meta"><b>'+esc(who(p))+'</b></span><div class="pbar'+(c>=t?" ok":"")+'"><i style="width:'+Math.min(100,c/t*100)+'%"></i></div><span>'
       +(can?'<button class="step" data-id="'+x.id+'" data-p="'+p+'" data-d="-1" aria-label="Subtract one for '+esc(who(p))+'">−</button>':"")
       +'<span class="cnt'+(BUMP===x.id+p?" pop":"")+'">'+c+'/'+t+'</span>'
@@ -280,7 +289,7 @@ function render(){
     BUMP=b.dataset.id+b.dataset.p;if(+b.dataset.d>0&&v>=tgt(x)&&cnt(x,b.dataset.p)<tgt(x))burst();
     DB.doc("tasks/"+b.dataset.id).update(o).catch(err)}});
   Array.prototype.forEach.call(document.querySelectorAll("[data-del]"),function(b){b.onclick=function(){DB.doc("tasks/"+b.dataset.del).delete().catch(err)}});
-  BUMP="";S.rendered=true;renderGantt(T);
+  BUMP="";S.rendered=true;renderPeople();renderGantt(T);
 }
 function renderPosts(){
   if(!ME.name)return;
